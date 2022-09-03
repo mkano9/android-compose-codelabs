@@ -16,28 +16,33 @@
 
 package com.example.compose.rally
 
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.*
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import com.example.compose.rally.ui.accounts.AccountsScreen
 import com.example.compose.rally.ui.accounts.SingleAccountScreen
 import com.example.compose.rally.ui.bills.BillsScreen
 import com.example.compose.rally.ui.overview.OverviewScreen
+import com.google.accompanist.navigation.animation.AnimatedNavHost
+import com.google.accompanist.navigation.animation.composable
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun RallyNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
-    NavHost(
+    AnimatedNavHost(
         navController = navController,
         startDestination = Overview.route,
         modifier = modifier
     ) {
-        composable(route = Overview.route) {
+        myAnimatedComposable(route = Overview.route) {
             OverviewScreen(
                 onClickSeeAllAccounts = {
                     navController.navigateSingleTopTo(Accounts.route)
@@ -50,17 +55,17 @@ fun RallyNavHost(
                 }
             )
         }
-        composable(route = Accounts.route) {
+        myAnimatedComposable(route = Accounts.route) {
             AccountsScreen(
                 onAccountClick = { accountType ->
                     navController.navigateToSingleAccount(accountType)
                 }
             )
         }
-        composable(route = Bills.route) {
+        myAnimatedComposable(route = Bills.route) {
             BillsScreen()
         }
-        composable(
+        myAnimatedComposable(
             route = SingleAccount.routeWithArgs,
             arguments = SingleAccount.arguments,
             deepLinks = SingleAccount.deepLinks
@@ -80,15 +85,42 @@ fun NavHostController.navigateSingleTopTo(route: String) =
         popUpTo(
             this@navigateSingleTopTo.graph.findStartDestination().id
         ) {
-            saveState = true
+            //saveState = true
         }
         // Avoid multiple copies of the same destination when
         // reselecting the same item
         launchSingleTop = true
         // Restore state when reselecting a previously selected item
-        restoreState = true
+        //restoreState = true
     }
 
 private fun NavHostController.navigateToSingleAccount(accountType: String) {
     this.navigateSingleTopTo("${SingleAccount.route}/$accountType")
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+private fun NavGraphBuilder.myAnimatedComposable(
+    route: String,
+    arguments: List<NamedNavArgument> = emptyList(),
+    deepLinks: List<NavDeepLink> = emptyList(),
+    content: @Composable AnimatedVisibilityScope.(NavBackStackEntry) -> Unit
+) {
+    composable(
+        route = route,
+        arguments = arguments,
+        deepLinks = deepLinks,
+        enterTransition = {
+            slideIntoContainer(AnimatedContentScope.SlideDirection.Left, tween(200))
+        },
+        exitTransition = {
+            slideOutOfContainer(AnimatedContentScope.SlideDirection.Left, tween(200))
+        },
+        popEnterTransition = {
+            slideIntoContainer(AnimatedContentScope.SlideDirection.Right, tween(200))
+        },
+        popExitTransition = {
+            slideOutOfContainer(AnimatedContentScope.SlideDirection.Right, tween(200))
+        },
+        content = content,
+    )
 }
